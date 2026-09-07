@@ -36,6 +36,8 @@ Then set `ALLOWED_HOSTS` in `wrangler.jsonc` (or in the dashboard under Settings
 
 Exact hosts match exactly. `*.example.com` matches any subdomain but not the apex. Anything else gets a 403, so nobody can spend your browser quota screenshotting other sites.
 
+Values set in the dashboard survive later deploys. The `vars` block in the config only seeds the first deploy, so you can keep the file generic and configure each deployment in the UI.
+
 Browser Rendering is included on the Workers Free plan with a daily time limit, and billed by browser time on the Paid plan. A cached OG image costs nothing to serve, so most sites stay well inside the free allotment.
 
 ## Use it
