@@ -82,19 +82,18 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
 
 
     <footer class="mt-20 border-t border-neutral-800 pt-8">
-      <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p class="font-semibold text-neutral-200">ogshot</p>
-          <p class="mt-1 max-w-xs text-sm text-neutral-500">Open source. Deploy your own on Cloudflare in about a minute.</p>
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-4">
+          <a href="${REPO}" class="text-neutral-400 hover:text-white [&>svg]:size-8" aria-label="ogshot on GitHub">${GITHUB_ICON}</a>
+          <div>
+            <p class="font-semibold text-neutral-200">ogshot</p>
+            <p class="mt-0.5 text-sm text-neutral-500">Open source, by <a href="https://github.com/jclusso" class="text-neutral-400 hover:text-white">Jarrett Lusso</a>.</p>
+          </div>
         </div>
-        <nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <a href="${REPO}" class="inline-flex items-center gap-1.5 text-neutral-300 hover:text-white">
-            <span class="size-4 shrink-0 [&>svg]:size-4">${GITHUB_ICON}</span>
-            GitHub
-          </a>
+        <nav class="flex gap-6 text-sm">
           <a href="${REPO}#readme" class="text-neutral-300 hover:text-white">Docs</a>
           <a href="${REPO}/issues" class="text-neutral-300 hover:text-white">Issues</a>
-          <a href="${DEPLOY_URL}" class="text-neutral-300 hover:text-white">Deploy to Cloudflare</a>
+          <a href="${DEPLOY_URL}" class="whitespace-nowrap text-neutral-300 hover:text-white">Deploy to Cloudflare</a>
         </nav>
       </div>
     </footer>
