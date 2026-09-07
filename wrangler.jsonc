@@ -6,6 +6,8 @@
   "compatibility_flags": ["nodejs_compat"],
   // Serialized page functions break when esbuild injects __name helpers.
   "keep_names": false,
+  // The client served at /ogshot.js is bundled and minified by esbuild ahead of time.
+  "build": { "command": "node scripts/build-client.js" },
   "observability": { "enabled": true },
   "browser": { "binding": "BROWSER", "remote": true },
   // ALLOWED_HOSTS is set in the dashboard, not here. keep_vars makes deploys leave it alone,

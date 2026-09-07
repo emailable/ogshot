@@ -1,4 +1,4 @@
-import { clientScript } from "./clientScript.js";
+import { clientScript } from "../dist/client/worker.js";
 import { homePage } from "./home.js";
 import { cacheKey, extractTemplate } from "./extract.js";
 import { isAllowedHost } from "./hosts.js";
@@ -42,7 +42,7 @@ export function createHandler({ renderer }) {
             },
           );
         case "/ogshot.js":
-          return new Response(clientScript(), {
+          return new Response(clientScript, {
             headers: {
               "content-type": "text/javascript; charset=utf-8",
               "cache-control": "public, max-age=86400, stale-while-revalidate=604800",

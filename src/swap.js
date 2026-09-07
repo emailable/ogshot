@@ -3,23 +3,22 @@ export const WIDTH = 1200;
 export const HEIGHT = 630;
 
 /**
- * Runs inside the page, both in headless Chromium at render time and in the browser via
- * the client script. It is serialized with Function.prototype.toString, so it must be
- * fully self-contained: no imports, no references to module scope.
+ * Replaces the page body with the OG template at 1200x630. Runs in the browser via the
+ * client script and in headless Chromium at render time.
  *
- * @returns {Promise<void>}
+ * Serialized with Function.prototype.toString for the renderer, so it must be fully
+ * self-contained: no imports, no references to module scope.
  */
-export async function swapToTemplate() {
+export function swapToTemplate() {
   const doc = document;
   if (doc.getElementById("ogshot")) return;
 
   const template = doc.querySelector("template[data-ogshot]");
   if (!template) return;
-  const markup = template.innerHTML;
 
   doc.body.innerHTML =
     '<div id="ogshot" style="position:relative;width:1200px;height:630px;overflow:hidden;">' +
-    markup +
+    template.innerHTML +
     "</div>";
   doc.body.removeAttribute("class");
   doc.body.setAttribute(
@@ -27,6 +26,19 @@ export async function swapToTemplate() {
     "margin:0;padding:0;width:1200px;height:630px;overflow:hidden;background:#fff;",
   );
   doc.documentElement.style.cssText += ";margin:0;padding:0;width:1200px;height:630px;overflow:hidden;";
+}
+
+/**
+ * Waits until everything the swapped-in template needs has loaded, so the renderer knows
+ * when to screenshot. Only the renderer runs this; a browser preview just paints as
+ * resources arrive. Same serialization constraints as swapToTemplate.
+ *
+ * @returns {Promise<void>}
+ */
+export async function settleTemplate() {
+  const doc = document;
+  const root = doc.getElementById("ogshot");
+  if (!root) return;
 
   // Everything below resolves as soon as the resource is ready; the timeouts only matter when
   // a request hangs.
@@ -43,7 +55,6 @@ export async function swapToTemplate() {
   await settle(Promise.all(sheets.map((link) => (link.sheet ? Promise.resolve() : onceLoaded(link)))), 5000);
 
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  const root = doc.getElementById("ogshot");
 
   // <img> elements and CSS background images inside the template.
   const images = Array.from(root.querySelectorAll("img"));

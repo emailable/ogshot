@@ -134,7 +134,7 @@ describe("GET /ogshot.js", () => {
     const body = await response.text();
     expect(body).toContain('"ogshot-preview"');
     expect(body).toContain("template[data-ogshot]");
-    expect(body).toContain('method: "HEAD"');
+    expect(body).toMatch(/method:s*"HEAD"/);
     expect(body).toContain("requestIdleCallback");
     expect(body).not.toContain("__name(");
   });

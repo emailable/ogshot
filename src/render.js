@@ -1,6 +1,6 @@
 import puppeteer from "@cloudflare/puppeteer";
 import { optimizePng } from "./png.js";
-import { HEIGHT, WIDTH, swapToTemplate } from "./swap.js";
+import { HEIGHT, WIDTH, settleTemplate, swapToTemplate } from "./swap.js";
 
 /**
  * @typedef {(target: URL, html: string, timing: import("./timing.js").Timing) => Promise<Uint8Array>} Renderer
@@ -47,7 +47,10 @@ export function createPuppeteerRenderer(env) {
       await timing.time("load", () =>
         page.goto(target.toString(), { waitUntil: "domcontentloaded", timeout: 15_000 }),
       );
-      await timing.time("swap", () => page.evaluate(swapToTemplate));
+      await timing.time("swap", async () => {
+        await page.evaluate(swapToTemplate);
+        await page.evaluate(settleTemplate);
+      });
       const png = await timing.time("screenshot", () =>
         page.screenshot({ type: "png", clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT } }),
       );
