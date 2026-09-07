@@ -65,11 +65,11 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
       <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Endpoints</h2>
       <dl class="mt-3 divide-y divide-neutral-800 rounded-md border border-neutral-800 bg-neutral-900 text-sm">
         <div class="px-4 py-3">
-          <dt class="break-all font-mono">GET ${escape(origin)}/render.png?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000</dt>
+          <dt class="font-mono">GET /render.png?url=&lt;page&gt;&amp;v=&lt;version&gt;</dt>
           <dd class="mt-1 text-neutral-400">The PNG. The page must be on an allowed host and contain a <code>&lt;template data-ogshot&gt;</code>. Change <code>v</code> whenever the card content changes so crawlers refetch.</dd>
         </div>
         <div class="px-4 py-3">
-          <dt class="break-all font-mono">GET ${escape(origin)}/ogshot.js</dt>
+          <dt class="font-mono">GET /ogshot.js</dt>
           <dd class="mt-1 text-neutral-400">Optional client script. Warms the cache for the page's <code>og:image</code> when someone visits, and with <code>?ogshot-preview</code> in the URL shows the template at 1200x630.</dd>
         </div>
       </dl>
@@ -80,6 +80,11 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
       <pre class="mt-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 px-4 py-3 text-xs leading-relaxed text-neutral-300"><code>${highlightHtml(example)}</code></pre>
     </section>
 
+
+    <footer class="mt-16 flex items-center gap-2 border-t border-neutral-800 pt-6 text-sm text-neutral-500">
+      <span class="text-neutral-600">${GITHUB_ICON}</span>
+      <p>ogshot is open source. Docs, issues, and the Deploy button live at <a href="${REPO}" class="text-neutral-300 underline decoration-neutral-700 underline-offset-2 hover:decoration-neutral-300">github.com/jclusso/ogshot</a>.</p>
+    </footer>
   </main>
 </body>
 </html>

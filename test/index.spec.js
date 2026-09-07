@@ -165,8 +165,9 @@ describe("other routes", () => {
     const body = await home.text();
     expect(body).toContain("ogshot");
     expect(body).toContain("*.example.org");
-    // Examples use the deployment's own origin and first allowed host.
+    // The Use it example uses the deployment's own origin and first allowed host.
     expect(body).toContain("https://ogshot.test/render.png?url=https%3A%2F%2Fexample.com%2Fposts%2F1");
+    expect(body).toContain("GET /render.png?url=&lt;page&gt;");
     expect((await call("/nope")).status).toBe(404);
   });
 });
