@@ -81,9 +81,22 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
     </section>
 
 
-    <footer class="mt-16 flex items-center gap-2 border-t border-neutral-800 pt-6 text-sm text-neutral-500">
-      <span class="text-neutral-600">${GITHUB_ICON}</span>
-      <p>ogshot is open source. Docs, issues, and the Deploy button live at <a href="${REPO}" class="text-neutral-300 underline decoration-neutral-700 underline-offset-2 hover:decoration-neutral-300">github.com/jclusso/ogshot</a>.</p>
+    <footer class="mt-20 border-t border-neutral-800 pt-8">
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p class="font-semibold text-neutral-200">ogshot</p>
+          <p class="mt-1 max-w-xs text-sm text-neutral-500">Open source. Deploy your own on Cloudflare in about a minute.</p>
+        </div>
+        <nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <a href="${REPO}" class="inline-flex items-center gap-1.5 text-neutral-300 hover:text-white">
+            <span class="size-4 shrink-0 [&>svg]:size-4">${GITHUB_ICON}</span>
+            GitHub
+          </a>
+          <a href="${REPO}#readme" class="text-neutral-300 hover:text-white">Docs</a>
+          <a href="${REPO}/issues" class="text-neutral-300 hover:text-white">Issues</a>
+          <a href="${DEPLOY_URL}" class="text-neutral-300 hover:text-white">Deploy to Cloudflare</a>
+        </nav>
+      </div>
     </footer>
   </main>
 </body>
