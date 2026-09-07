@@ -1,4 +1,5 @@
 import puppeteer from "@cloudflare/puppeteer";
+import { optimizePng } from "./png.js";
 import { HEIGHT, WIDTH, swapToTemplate } from "./swap.js";
 
 /**
@@ -50,7 +51,9 @@ export function createPuppeteerRenderer(env) {
       const png = await timing.time("screenshot", () =>
         page.screenshot({ type: "png", clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT } }),
       );
-      return new Uint8Array(png);
+      // Chromium's encoder favors speed. Re-encoding losslessly is typically 30 to 40 percent
+      // smaller, which keeps gradient-heavy cards under the stricter providers' size limits.
+      return timing.time("optimize", async () => optimizePng(new Uint8Array(png)));
     } finally {
       await context.close().catch(() => {});
       browser.disconnect();

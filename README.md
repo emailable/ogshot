@@ -126,7 +126,9 @@ npm test
 | `GET /ogshot.js` | The client script: cache warming and `?ogshot-preview`. |
 | `GET /` | A short description. |
 
-Responses include `x-ogshot-cache: HIT` or `MISS`. Misses also carry a `Server-Timing` header with the time spent fetching the page, getting a browser, loading, swapping in the template, and screenshotting.
+Responses include `x-ogshot-cache: HIT` or `MISS`. Misses also carry a `Server-Timing` header with the time spent fetching the page, getting a browser, loading, swapping in the template, screenshotting, and re-encoding.
+
+The PNG is re-encoded losslessly after the screenshot. Chromium's encoder favors speed, and the re-encode is typically 30 to 40 percent smaller with identical pixels. That matters for gradient-heavy cards, which otherwise land near the 300 KB limit some messaging apps apply to preview images.
 
 ## Notes
 
