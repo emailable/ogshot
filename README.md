@@ -67,7 +67,7 @@ Generate the contents with whatever renders the rest of your page. The template 
 
 Facebook, X, Slack, and iMessage cache `og:image` by URL, some effectively forever. The Worker can't do anything about that, so the URL has to change when the image should. Pass something that changes when the card content changes: the record's last-modified timestamp, a content hash, a cache key.
 
-The Worker itself ignores `v`. It keys the cache on the template's actual content, so a stale `v` never serves a wrong image, it just doesn't force downstream caches to refresh. With `v` present the response is `immutable` with a one-year max-age; without it, one day.
+The Worker keys its cache on `v` together with the template's content. A new `v` always renders fresh, which also covers changes the template hash can't see, like an edited stylesheet or a replaced image at the same URL. If you forget to bump `v`, a template edit still triggers a render, but crawlers that already cached the old URL won't see it until `v` changes. With `v` present the response is `immutable` with a one-year max-age; without it, one day.
 
 ## Preview in development
 

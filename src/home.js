@@ -96,10 +96,12 @@ function tryIt(hosts, examplePage) {
       <form id="try" class="mt-3 flex flex-col gap-3 sm:flex-row">
         <input name="url" type="url" required placeholder="${escape(examplePage)}"
           class="flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400">
+        <input name="v" type="text" placeholder="v" title="Optional version. A new value forces a fresh render."
+          class="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400 sm:w-28">
         <button type="submit"
           class="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-200">Render</button>
       </form>
-      <p class="mt-2 text-sm text-neutral-400">Allowed hosts: ${hostList}</p>
+      <p class="mt-2 text-sm text-neutral-400">Allowed hosts: ${hostList}. Leave <code>v</code> empty to see cache hits; change it to force a render.</p>
       <div id="result" class="mt-4 hidden">
         <img id="preview" alt="Rendered Open Graph image" class="w-full rounded-md border border-neutral-800 bg-neutral-900">
         <p id="status" class="mt-2 break-all font-mono text-xs text-neutral-500"></p>
@@ -116,7 +118,7 @@ function tryIt(hosts, examplePage) {
       event.preventDefault();
       const url = new URL("/render", location.origin);
       url.searchParams.set("url", form.elements.url.value);
-      url.searchParams.set("v", Date.now());
+      if (form.elements.v.value) url.searchParams.set("v", form.elements.v.value);
 
       result.classList.remove("hidden");
       preview.removeAttribute("src");

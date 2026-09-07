@@ -61,12 +61,24 @@ describe("GET /render", () => {
     expect(render).toHaveBeenCalledTimes(1);
     expect(render.mock.calls[0][0].toString()).toBe("https://example.com/posts/1");
 
-    const hit = await call("/render?url=https://example.com/posts/1");
+    const hit = await call("/render?url=https://example.com/posts/1&v=1");
     expect(hit.status).toBe(200);
     expect(hit.headers.get("x-ogshot-cache")).toBe("HIT");
-    expect(hit.headers.get("cache-control")).toBe("public, max-age=86400");
     expect(new Uint8Array(await hit.arrayBuffer())).toEqual(PNG);
     expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-renders when v changes and uses a shorter browser TTL without it", async () => {
+    const { call, render } = handler({ "https://example.com/posts/2": ok(html("<b>B</b>")) });
+
+    await call("/render?url=https://example.com/posts/2&v=1");
+    await call("/render?url=https://example.com/posts/2&v=2");
+    expect(render).toHaveBeenCalledTimes(2);
+
+    const unversioned = await call("/render?url=https://example.com/posts/2");
+    expect(unversioned.headers.get("x-ogshot-cache")).toBe("MISS");
+    expect(unversioned.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(render).toHaveBeenCalledTimes(3);
   });
 
   it("re-renders when the template changes", async () => {

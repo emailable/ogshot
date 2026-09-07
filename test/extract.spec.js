@@ -46,6 +46,12 @@ describe("contentKey", () => {
     expect(await contentKey(url, a)).not.toBe(await contentKey(url, b));
   });
 
+  it("changes with the version", async () => {
+    const html = page(`<template data-ogshot><b>Card</b></template>`);
+    expect(await contentKey(url, html, "1")).not.toBe(await contentKey(url, html, "2"));
+    expect(await contentKey(url, html, null)).toBe(await contentKey(url, html, null));
+  });
+
   it("changes with the page url", async () => {
     const html = page(`<template data-ogshot><b>Card</b></template>`);
     expect(await contentKey(url, html)).not.toBe(

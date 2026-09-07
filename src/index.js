@@ -75,12 +75,13 @@ async function render(url, env, ctx, renderer, fetchImpl) {
   const finalUrl = new URL(page.url || target.toString());
   if (!isAllowedHost(finalUrl.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
-  const key = await contentKey(finalUrl, await page.text());
+  const version = url.searchParams.get("v");
+  const key = await contentKey(finalUrl, await page.text(), version);
   const cacheKey = new Request(`${CACHE_ORIGIN}/${key}.png`);
   const cache = caches.default;
 
-  const versioned = url.searchParams.has("v");
-  const browserCache = versioned ? "public, max-age=31536000, immutable" : "public, max-age=86400";
+  const browserCache =
+    version !== null ? "public, max-age=31536000, immutable" : "public, max-age=86400";
 
   const hit = await cache.match(cacheKey);
   if (hit) return withHeaders(hit, { "cache-control": browserCache, "x-ogshot-cache": "HIT" });
@@ -90,7 +91,7 @@ async function render(url, env, ctx, renderer, fetchImpl) {
     headers: {
       "content-type": "image/png",
       "content-length": String(png.byteLength),
-      // Edge TTL. The key is content-addressed, so this can be long regardless of `v`.
+      // Edge TTL. The key covers both `v` and the template content, so this can be long.
       "cache-control": "public, max-age=31536000",
       "x-ogshot-key": key,
     },
@@ -124,6 +125,7 @@ function fetchPage(target, fetchImpl) {
   return fetchImpl(target.toString(), {
     headers: { "user-agent": USER_AGENT, accept: "text/html" },
     redirect: "follow",
+    cache: "no-store",
     signal: AbortSignal.timeout(10_000),
   });
 }
