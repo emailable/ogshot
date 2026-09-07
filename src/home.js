@@ -23,6 +23,17 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
   const examplePage = `https://${exampleHost}/posts/1`;
 
   const primary = mode === "worker" ? tryIt(hosts, examplePage) : deployIt();
+  const imageUrl = `${origin}/render.png?url=${encodeURIComponent(examplePage)}&v=1725000000`;
+  const example = `<template data-ogshot>
+  <div class="flex h-full w-full flex-col justify-between bg-neutral-900 p-20 text-white">
+    <h1 class="text-6xl font-bold">How we cut build times in half</h1>
+    <p class="text-2xl text-neutral-400">${exampleHost}</p>
+  </div>
+</template>
+
+<meta property="og:image" content="${imageUrl}">
+<meta property="og:image:type" content="image/png">
+<script src="${origin}/ogshot.js" async fetchpriority="low"></script>`;
 
   return `<!doctype html>
 <html lang="en" class="h-full dark">
@@ -66,16 +77,7 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
 
     <section class="mt-10">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Use it</h2>
-      <pre class="mt-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 px-4 py-3 text-xs leading-relaxed text-neutral-300"><code>&lt;template data-ogshot&gt;
-  &lt;div class="flex h-full w-full flex-col justify-between bg-neutral-900 p-20 text-white"&gt;
-    &lt;h1 class="text-6xl font-bold"&gt;How we cut build times in half&lt;/h1&gt;
-    &lt;p class="text-2xl text-neutral-400"&gt;${escape(exampleHost)}&lt;/p&gt;
-  &lt;/div&gt;
-&lt;/template&gt;
-
-&lt;meta property="og:image" content="${escape(origin)}/render.png?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000"&gt;
-&lt;meta property="og:image:type" content="image/png"&gt;
-&lt;script src="${escape(origin)}/ogshot.js" async fetchpriority="low"&gt;&lt;/script&gt;</code></pre>
+      <pre class="mt-3 overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 px-4 py-3 text-xs leading-relaxed text-neutral-300"><code>${highlightHtml(example)}</code></pre>
     </section>
 
   </main>
@@ -167,6 +169,23 @@ function exampleHostFor(hosts) {
 }
 
 const GITHUB_ICON = `<svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>`;
+
+/**
+ * Minimal HTML syntax coloring for the example. Tags, attribute names, and attribute values
+ * get their own color; everything else stays the default.
+ *
+ * @param {string} source
+ */
+function highlightHtml(source) {
+  const span = (cls, text) => `<span class="${cls}">${escape(text)}</span>`;
+  return source.replace(/<(\/?)([\w-]+)((?:\s+[\w:@.-]+(?:="[^"]*")?)*)\s*(\/?)>|[^<]+/g, (m, slash, name, attrs, selfClose) => {
+    if (name === undefined) return escape(m);
+    const attributes = (attrs ?? "").replace(/\s+([\w:@.-]+)(?:="([^"]*)")?/g, (_, key, value) =>
+      " " + span("text-sky-300", key) + (value === undefined ? "" : span("text-neutral-500", "=") + span("text-amber-300", `"${value}"`)),
+    );
+    return span("text-neutral-500", "<" + slash) + span("text-emerald-400", name) + attributes + span("text-neutral-500", selfClose + ">");
+  });
+}
 
 /** @param {string} s */
 function escape(s) {
