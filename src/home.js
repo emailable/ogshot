@@ -14,7 +14,7 @@ const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><re
  * @param {{ mode: "worker" | "static", origin?: string, allowedHosts?: string }} options
  * @returns {string}
  */
-export function homePage({ mode, origin = "https://og.example.com", allowedHosts = "" }) {
+export function homePage({ mode, origin = "https://ogshot.example.com", allowedHosts = "" }) {
   const hosts = allowedHosts
     .split(",")
     .map((h) => h.trim())

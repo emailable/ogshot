@@ -8,7 +8,7 @@ Put a `<template data-ogshot>` on any page. ogshot loads the page in headless Ch
 
 ## How it works
 
-1. A crawler requests `https://og.example.com/render?url=https://example.com/posts/1&v=1725000000`.
+1. A crawler requests `https://ogshot.example.com/render?url=https://example.com/posts/1&v=1725000000`.
 2. The Worker fetches the page HTML, pulls out the template, and hashes it. That hash is the cache key.
 3. On a miss, it opens the page in [Browser Rendering](https://developers.cloudflare.com/browser-rendering/), replaces the body with the template, waits for images and fonts, and screenshots.
 4. The PNG is stored in the Workers Cache API and served with long cache headers.
@@ -56,7 +56,7 @@ Generate the contents with whatever renders the rest of your page. The template 
 ### 2. Point `og:image` at the Worker
 
 ```html
-<meta property="og:image" content="https://og.example.com/render?url=https://example.com/posts/1&v=1725000000">
+<meta property="og:image" content="https://ogshot.example.com/render?url=https://example.com/posts/1&v=1725000000">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 ```
@@ -74,7 +74,7 @@ The Worker itself ignores `v`. It keys the cache on the template's actual conten
 Include the preview script on your pages in development:
 
 ```html
-<script src="https://og.example.com/preview.js" defer></script>
+<script src="https://ogshot.example.com/preview.js" defer></script>
 ```
 
 Then open any page with `?ogshot-preview` appended. The script swaps the body for your template at 1200x630 so you can tweak it in devtools. This is exactly what the Worker does before it screenshots, using the same code.

@@ -9,7 +9,7 @@ describe("isAllowedHost", () => {
   });
 
   it("matches wildcard subdomains but not the apex", () => {
-    expect(isAllowedHost("blog.example.com", "*.example.com")).toBe(true);
+    expect(isAllowedHost("blogshot.example.com", "*.example.com")).toBe(true);
     expect(isAllowedHost("a.b.example.com", "*.example.com")).toBe(true);
     expect(isAllowedHost("example.com", "*.example.com")).toBe(false);
     expect(isAllowedHost("notexample.com", "*.example.com")).toBe(false);
