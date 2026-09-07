@@ -152,3 +152,7 @@ The PNG is re-encoded losslessly after the screenshot. Chromium's encoder favors
 - The Cache API is per data center, so the first crawler to hit a given region triggers one render there. Expect a few misses per image, not one.
 - Templates should be static HTML and CSS. The renderer waits for stylesheets, images, and fonts, not for your JavaScript.
 - Each cache-warming HEAD costs the Worker one fetch of your page HTML to compute the key. Negligible for most sites; if yours is very high traffic, skip the client and warm on publish instead.
+
+## Credits
+
+Inspiration from [OGKit](https://ogkit.dev), built by [Peter Suhm](https://x.com/petersuhm).
