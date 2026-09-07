@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { contentKey, extractFallbackInputs, extractTemplate } from "../src/extract.js";
+import { cacheKey, extractTemplate } from "../src/extract.js";
 
-const page = (body, head = "") =>
-  `<!doctype html><html><head><title>Hello</title>${head}</head><body>${body}</body></html>`;
+const page = (body) => `<!doctype html><html><head><title>Hello</title></head><body>${body}</body></html>`;
 
 describe("extractTemplate", () => {
   it("returns the template inner markup", () => {
@@ -16,46 +15,18 @@ describe("extractTemplate", () => {
   });
 });
 
-describe("extractFallbackInputs", () => {
-  it("collects title, description and site name regardless of attribute order", () => {
-    const html = page(
-      "",
-      `<meta content="Desc" name="description"><meta property="og:site_name" content="Site">`,
-    );
-    expect(extractFallbackInputs(html)).toBe("Hello\nDesc\nSite");
-  });
-
-  it("prefers og:description over description", () => {
-    const html = page("", `<meta name="description" content="A"><meta property="og:description" content="B">`);
-    expect(extractFallbackInputs(html)).toBe("Hello\nB\n");
-  });
-});
-
-describe("contentKey", () => {
+describe("cacheKey", () => {
   const url = new URL("https://example.com/posts/1");
 
-  it("ignores changes outside the template", async () => {
-    const a = page(`<meta name="csrf-token" content="aaa"><template data-ogshot><b>Card</b></template>`);
-    const b = page(`<meta name="csrf-token" content="bbb"><template data-ogshot><b>Card</b></template>`);
-    expect(await contentKey(url, a)).toBe(await contentKey(url, b));
+  it("is stable for the same inputs", async () => {
+    expect(await cacheKey(url, "<b>Card</b>", "1")).toBe(await cacheKey(url, "<b>Card</b>", "1"));
+    expect(await cacheKey(url, "<b>Card</b>", null)).toBe(await cacheKey(url, "<b>Card</b>", null));
   });
 
-  it("changes when the template changes", async () => {
-    const a = page(`<template data-ogshot><b>Card</b></template>`);
-    const b = page(`<template data-ogshot><b>Card 2</b></template>`);
-    expect(await contentKey(url, a)).not.toBe(await contentKey(url, b));
-  });
-
-  it("changes with the version", async () => {
-    const html = page(`<template data-ogshot><b>Card</b></template>`);
-    expect(await contentKey(url, html, "1")).not.toBe(await contentKey(url, html, "2"));
-    expect(await contentKey(url, html, null)).toBe(await contentKey(url, html, null));
-  });
-
-  it("changes with the page url", async () => {
-    const html = page(`<template data-ogshot><b>Card</b></template>`);
-    expect(await contentKey(url, html)).not.toBe(
-      await contentKey(new URL("https://example.com/posts/2"), html),
-    );
+  it("changes with the template, the version, and the url", async () => {
+    const base = await cacheKey(url, "<b>Card</b>", "1");
+    expect(await cacheKey(url, "<b>Card 2</b>", "1")).not.toBe(base);
+    expect(await cacheKey(url, "<b>Card</b>", "2")).not.toBe(base);
+    expect(await cacheKey(new URL("https://example.com/posts/2"), "<b>Card</b>", "1")).not.toBe(base);
   });
 });

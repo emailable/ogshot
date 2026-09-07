@@ -55,7 +55,7 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
       <dl class="mt-3 divide-y divide-neutral-800 rounded-md border border-neutral-800 bg-neutral-900 text-sm">
         <div class="px-4 py-3">
           <dt class="break-all font-mono">GET ${escape(origin)}/render.png?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000</dt>
-          <dd class="mt-1 text-neutral-400">The PNG. The page must be on an allowed host and can include a <code>&lt;template data-ogshot&gt;</code>. Change <code>v</code> whenever the card content changes so crawlers refetch.</dd>
+          <dd class="mt-1 text-neutral-400">The PNG. The page must be on an allowed host and contain a <code>&lt;template data-ogshot&gt;</code>. Change <code>v</code> whenever the card content changes so crawlers refetch.</dd>
         </div>
         <div class="px-4 py-3">
           <dt class="break-all font-mono">GET ${escape(origin)}/ogshot.js</dt>

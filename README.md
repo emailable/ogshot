@@ -13,8 +13,6 @@ Put a `<template data-ogshot>` on any page. ogshot loads the page in headless Ch
 3. On a miss, it opens the page in [Browser Rendering](https://developers.cloudflare.com/browser-rendering/), replaces the body with the template, waits for images and fonts, and screenshots.
 4. The PNG is stored in the Workers Cache API and served with long cache headers.
 
-Pages without a template get a plain fallback card built from the title, description, and site name.
-
 ## Deploy
 
 Click the button above, or:
@@ -64,7 +62,7 @@ Generate the contents with whatever renders the rest of your page. The template 
 <meta property="og:image:height" content="630">
 ```
 
-`url` is the page's canonical URL, URL-encoded. `v` is described below. `/render` without the extension also works, but some platforms are picky about image URLs that don't end in an image extension.
+`url` is the page's canonical URL, URL-encoded. `v` is described below. A page without a template gets a 422.
 
 ### The `v` parameter
 

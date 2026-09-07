@@ -1,6 +1,6 @@
 import { clientScript } from "./clientScript.js";
 import { homePage } from "./home.js";
-import { contentKey } from "./extract.js";
+import { cacheKey, extractTemplate } from "./extract.js";
 import { isAllowedHost } from "./hosts.js";
 import { createPuppeteerRenderer } from "./render.js";
 import { createTiming } from "./timing.js";
@@ -13,8 +13,8 @@ import { createTiming } from "./timing.js";
 
 /**
  * @typedef {object} HandlerOptions
- * @property {(env: Env) => import("./render.js").Renderer} renderer
- * @property {typeof globalThis.fetch} [fetch] Used to fetch the target page. Injectable for tests.
+ * @property {(env: Env) => import("./render.js").Renderer} renderer Injectable because Browser
+ *   Rendering has no local emulation.
  */
 
 const USER_AGENT = "ogshot/0.1 (+https://github.com/jclusso/ogshot)";
@@ -24,7 +24,7 @@ const CACHE_ORIGIN = "https://ogshot.cache";
  * @param {HandlerOptions} options
  * @returns {ExportedHandler<Env>}
  */
-export function createHandler({ renderer, fetch: fetchImpl = (...args) => globalThis.fetch(...args) }) {
+export function createHandler({ renderer }) {
   return {
     async fetch(request, env, ctx) {
       const url = new URL(request.url);
@@ -42,7 +42,6 @@ export function createHandler({ renderer, fetch: fetchImpl = (...args) => global
             },
           );
         case "/ogshot.js":
-        case "/preview.js":
           return new Response(clientScript(), {
             headers: {
               "content-type": "text/javascript; charset=utf-8",
@@ -50,9 +49,8 @@ export function createHandler({ renderer, fetch: fetchImpl = (...args) => global
               "access-control-allow-origin": "*",
             },
           });
-        case "/render.png":
-        case "/render": {
-          const response = await render(url, env, ctx, renderer(env), fetchImpl);
+        case "/render.png": {
+          const response = await render(url, env, ctx, renderer(env));
           // HEAD warms the cache without sending the body.
           return request.method === "HEAD" ? new Response(null, response) : response;
         }
@@ -68,15 +66,14 @@ export function createHandler({ renderer, fetch: fetchImpl = (...args) => global
  * @param {Env} env
  * @param {ExecutionContext} ctx
  * @param {import("./render.js").Renderer} renderer
- * @param {typeof globalThis.fetch} fetchImpl
  */
-async function render(url, env, ctx, renderer, fetchImpl) {
+async function render(url, env, ctx, renderer) {
   const target = parseTarget(url.searchParams.get("url"));
   if (!target) return text("Missing or invalid url parameter", 400);
   if (!isAllowedHost(target.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
   const timing = createTiming();
-  const page = await timing.time("fetch", () => fetchPage(target, fetchImpl));
+  const page = await timing.time("fetch", () => fetchPage(target));
   if (!page.ok) return text(`Upstream returned ${page.status}`, 502);
 
   // Redirects are followed; make sure we didn't land somewhere off the allowlist.
@@ -84,34 +81,29 @@ async function render(url, env, ctx, renderer, fetchImpl) {
   if (!isAllowedHost(finalUrl.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
   const html = await page.text();
+  const template = extractTemplate(html);
+  if (template === null) return text("Page has no <template data-ogshot>", 422);
+
+  // `v` is part of the key, so a cached entry is only ever served to requests with the same
+  // `v`-ness and its Cache-Control can be stored as is.
   const version = url.searchParams.get("v");
-  const key = await contentKey(finalUrl, html, version);
-  const cacheKey = new Request(`${CACHE_ORIGIN}/${key}.png`);
+  const key = new Request(`${CACHE_ORIGIN}/${await cacheKey(finalUrl, template, version)}.png`);
   const cache = caches.default;
 
-  const browserCache =
-    version !== null ? "public, max-age=31536000, immutable" : "public, max-age=86400";
-
-  const hit = await cache.match(cacheKey);
-  if (hit) return withHeaders(hit, { "cache-control": browserCache, "x-ogshot-cache": "HIT" });
+  const hit = await cache.match(key);
+  if (hit) return withHeaders(hit, { "x-ogshot-cache": "HIT" });
 
   const png = await renderer(finalUrl, html, timing);
-  const stored = new Response(png, {
+  const response = new Response(png, {
     headers: {
       "content-type": "image/png",
-      "content-length": String(png.byteLength),
-      // Edge TTL. The key covers both `v` and the template content, so this can be long.
-      "cache-control": "public, max-age=31536000",
-      "x-ogshot-key": key,
+      "cache-control":
+        version !== null ? "public, max-age=31536000, immutable" : "public, max-age=86400",
     },
   });
-  ctx.waitUntil(cache.put(cacheKey, stored.clone()));
+  ctx.waitUntil(cache.put(key, response.clone()));
 
-  return withHeaders(stored, {
-    "cache-control": browserCache,
-    "x-ogshot-cache": "MISS",
-    "server-timing": timing.header(),
-  });
+  return withHeaders(response, { "x-ogshot-cache": "MISS", "server-timing": timing.header() });
 }
 
 /**
@@ -130,12 +122,9 @@ function parseTarget(raw) {
   }
 }
 
-/**
- * @param {URL} target
- * @param {typeof globalThis.fetch} fetchImpl
- */
-function fetchPage(target, fetchImpl) {
-  return fetchImpl(target.toString(), {
+/** @param {URL} target */
+function fetchPage(target) {
+  return fetch(target.toString(), {
     headers: { "user-agent": USER_AGENT, accept: "text/html" },
     redirect: "follow",
     cache: "no-store",
