@@ -1,0 +1,22 @@
+{
+  "name": "ogshot",
+  "version": "0.1.0",
+  "description": "Open Graph images from your own HTML and CSS, rendered and cached on Cloudflare Workers.",
+  "license": "MIT",
+  "author": "Jarrett Lusso",
+  "repository": "github:jclusso/ogshot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "build:pages": "node scripts/build-pages.js"
+  },
+  "devDependencies": {
+    "@cloudflare/puppeteer": "^1.4.0",
+    "@cloudflare/vitest-plugin": "^1.1.4",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.129.0"
+  }
+}
