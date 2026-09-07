@@ -70,7 +70,7 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
         </div>
         <div class="px-4 py-3">
           <dt class="font-mono">GET /ogshot.js</dt>
-          <dd class="mt-1 text-neutral-400">Optional client, also on npm as <code>ogshot</code>. Warms the cache for the page's <code>og:image</code> when someone visits, and with <code>?ogshot-preview</code> in the URL shows the template at 1200x630.</dd>
+          <dd class="mt-1 text-neutral-400">Optional client, also on npm as <code>@jclusso/ogshot</code>. Warms the cache for the page's <code>og:image</code> when someone visits, and with <code>?ogshot-preview</code> in the URL shows the template at 1200x630.</dd>
         </div>
       </dl>
     </section>

@@ -1,7 +1,7 @@
 import { PREVIEW_PARAM, swapToTemplate } from "./swap.js";
 
 /**
- * The client, published to npm as `ogshot` and served by the Worker at /ogshot.js as an
+ * The client, published to npm as `@jclusso/ogshot` and served by the Worker at /ogshot.js as an
  * IIFE. Two jobs:
  *
  * - With `?ogshot-preview` in the URL, swap the body for the OG template at 1200x630 so you

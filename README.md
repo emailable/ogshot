@@ -72,11 +72,11 @@ The Worker keys its cache on `v` together with the template's content. A new `v`
 Install the package and call it once from your JavaScript entrypoint:
 
 ```sh
-npm install ogshot
+npm install @jclusso/ogshot
 ```
 
 ```js
-import { ogshot } from "ogshot";
+import { ogshot } from "@jclusso/ogshot";
 ogshot();
 ```
 

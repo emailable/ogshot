@@ -1,5 +1,5 @@
 {
-  "name": "ogshot",
+  "name": "@jclusso/ogshot",
   "version": "0.1.0",
   "description": "Open Graph images from your own HTML and CSS, rendered and cached on Cloudflare Workers.",
   "keywords": [
@@ -10,7 +10,6 @@
   ],
   "license": "MIT",
   "author": "Jarrett Lusso",
-  "repository": "github:jclusso/ogshot",
   "homepage": "https://github.com/jclusso/ogshot#readme",
   "type": "module",
   "exports": {
@@ -40,5 +39,12 @@
     "fflate": "^0.8.3",
     "vitest": "^4.1.0",
     "wrangler": "^4.129.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jclusso/ogshot.git"
   }
 }
