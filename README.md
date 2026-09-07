@@ -8,7 +8,7 @@ Put a `<template data-ogshot>` on any page. ogshot loads the page in headless Ch
 
 ## How it works
 
-1. A crawler requests `https://ogshot.example.com/render?url=https://example.com/posts/1&v=1725000000`.
+1. A crawler requests `https://ogshot.example.com/render.png?url=https://example.com/posts/1&v=1725000000`.
 2. The Worker fetches the page HTML, pulls out the template, and hashes it. That hash is the cache key.
 3. On a miss, it opens the page in [Browser Rendering](https://developers.cloudflare.com/browser-rendering/), replaces the body with the template, waits for images and fonts, and screenshots.
 4. The PNG is stored in the Workers Cache API and served with long cache headers.
@@ -58,12 +58,13 @@ Generate the contents with whatever renders the rest of your page. The template 
 ### 2. Point `og:image` at the Worker
 
 ```html
-<meta property="og:image" content="https://ogshot.example.com/render?url=https://example.com/posts/1&v=1725000000">
+<meta property="og:image" content="https://ogshot.example.com/render.png?url=https://example.com/posts/1&v=1725000000">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 ```
 
-`url` is the page's canonical URL, URL-encoded. `v` is described below.
+`url` is the page's canonical URL, URL-encoded. `v` is described below. `/render` without the extension also works, but some platforms are picky about image URLs that don't end in an image extension.
 
 ### The `v` parameter
 
@@ -71,19 +72,28 @@ Facebook, X, Slack, and iMessage cache `og:image` by URL, some effectively forev
 
 The Worker keys its cache on `v` together with the template's content. A new `v` always renders fresh, which also covers changes the template hash can't see, like an edited stylesheet or a replaced image at the same URL. If you forget to bump `v`, a template edit still triggers a render, but crawlers that already cached the old URL won't see it until `v` changes. With `v` present the response is `immutable` with a one-year max-age; without it, one day.
 
-## Preview in development
-
-Include the preview script on your pages in development:
+### 3. Include the client script on every page
 
 ```html
-<script src="https://ogshot.example.com/preview.js" defer></script>
+<script src="https://ogshot.example.com/ogshot.js" async fetchpriority="low"></script>
 ```
 
-Then open any page with `?ogshot-preview` appended. The script swaps the body for your template at 1200x630 so you can tweak it in devtools. This is exactly what the Worker does before it screenshots, using the same code.
+This goes in production, on every page that has an `og:image` pointing at the Worker. Not just in development.
 
-The script does nothing without the query param, so it's harmless if it ships to production. The Worker never depends on it.
+It does two things:
 
-To see a real PNG of a local page, expose it with `cloudflared tunnel --url localhost:3000`, add the tunnel host to `ALLOWED_HOSTS`, and request `/render?url=<tunnel url>`.
+- **Warms the cache.** Crawlers give up after a few seconds and a first render can take that long. The person sharing a link almost always loaded the page first, so the script finds the page's `og:image` tag and sends it a HEAD request. The Worker renders and caches the image and returns headers only. By the time anyone pastes the link into Slack or X, the image is a cache hit.
+- **Previews the template.** Open any page with `?ogshot-preview` appended and the script swaps the body for your template at 1200x630 so you can tweak it in devtools. Same code the renderer runs.
+
+The script has no effect on page load. It's a few kilobytes, loaded `async` at low priority and cached for a day, and the warm-up waits for the window `load` event and then an idle period before sending a low-priority request whose response has no body. It fires once per page URL per browser session. Nothing it does shows up in Core Web Vitals.
+
+The Worker never depends on the script. Without it, warm the cache yourself by requesting the image URL when you publish. That's also the right move when one deploy changes many pages at once, since no visitor has seen the new pages yet.
+
+## Preview in development
+
+With the client script included, append `?ogshot-preview` to any local page.
+
+To see a real PNG of a local page, expose it with `cloudflared tunnel --url localhost:3000`, add the tunnel host to `ALLOWED_HOSTS`, and request `/render.png?url=<tunnel url>`.
 
 ## Fonts and images
 
@@ -116,8 +126,8 @@ npm test
 
 | Path | Description |
 |---|---|
-| `GET /render?url=<page>&v=<version>` | The PNG. `url` must be on `ALLOWED_HOSTS`. |
-| `GET /preview.js` | The dev preview script. |
+| `GET /render.png?url=<page>&v=<version>` | The PNG. `url` must be on `ALLOWED_HOSTS`. HEAD renders and caches without returning the body. |
+| `GET /ogshot.js` | The client script: cache warming and `?ogshot-preview`. |
 | `GET /` | A short description. |
 
 Responses include `x-ogshot-cache: HIT` or `MISS`. Misses also carry a `Server-Timing` header with the time spent fetching the page, getting a browser, loading, swapping in the template, and screenshotting.
@@ -126,4 +136,4 @@ Responses include `x-ogshot-cache: HIT` or `MISS`. Misses also carry a `Server-T
 
 - The Cache API is per data center, so the first crawler to hit a given region triggers one render there. Expect a few misses per image, not one.
 - Templates should be static HTML and CSS. The renderer waits for stylesheets, images, and fonts, not for your JavaScript.
-- Crawlers give up after several seconds, and a first render can take that long. Warm the cache by requesting the image when you publish, before anyone shares the link.
+- Each cache-warming HEAD costs the Worker one fetch of your page HTML to compute the key. Negligible for most sites; if yours is very high traffic, skip the script and warm on publish instead.

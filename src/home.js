@@ -54,12 +54,12 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
       <h2 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">Endpoints</h2>
       <dl class="mt-3 divide-y divide-neutral-800 rounded-md border border-neutral-800 bg-neutral-900 text-sm">
         <div class="px-4 py-3">
-          <dt class="break-all font-mono">GET ${escape(origin)}/render?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000</dt>
+          <dt class="break-all font-mono">GET ${escape(origin)}/render.png?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000</dt>
           <dd class="mt-1 text-neutral-400">The PNG. The page must be on an allowed host and can include a <code>&lt;template data-ogshot&gt;</code>. Change <code>v</code> whenever the card content changes so crawlers refetch.</dd>
         </div>
         <div class="px-4 py-3">
-          <dt class="break-all font-mono">GET ${escape(origin)}/preview.js</dt>
-          <dd class="mt-1 text-neutral-400">Dev script. Include it and append <code>?ogshot-preview</code> to any page to see the template at 1200x630.</dd>
+          <dt class="break-all font-mono">GET ${escape(origin)}/ogshot.js</dt>
+          <dd class="mt-1 text-neutral-400">Optional client script. Warms the cache for the page's <code>og:image</code> when someone visits, and with <code>?ogshot-preview</code> in the URL shows the template at 1200x630.</dd>
         </div>
       </dl>
     </section>
@@ -73,7 +73,9 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
   &lt;/div&gt;
 &lt;/template&gt;
 
-&lt;meta property="og:image" content="${escape(origin)}/render?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000"&gt;</code></pre>
+&lt;meta property="og:image" content="${escape(origin)}/render.png?url=${escape(encodeURIComponent(examplePage))}&amp;v=1725000000"&gt;
+&lt;meta property="og:image:type" content="image/png"&gt;
+&lt;script src="${escape(origin)}/ogshot.js" async fetchpriority="low"&gt;&lt;/script&gt;</code></pre>
     </section>
 
   </main>
@@ -116,7 +118,7 @@ function tryIt(hosts, examplePage) {
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const url = new URL("/render", location.origin);
+      const url = new URL("/render.png", location.origin);
       url.searchParams.set("url", form.elements.url.value);
       if (form.elements.v.value) url.searchParams.set("v", form.elements.v.value);
 

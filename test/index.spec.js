@@ -19,9 +19,9 @@ function handler(upstream = {}) {
   });
 
   const app = createHandler({ renderer: () => render, fetch });
-  const call = async (path) => {
+  const call = async (path, method = "GET") => {
     const ctx = createExecutionContext();
-    const response = await app.fetch(new Request(`https://ogshot.test${path}`), env, ctx);
+    const response = await app.fetch(new Request(`https://ogshot.test${path}`, { method }), env, ctx);
     await waitOnExecutionContext(ctx);
     return response;
   };
@@ -113,16 +113,47 @@ describe("GET /render", () => {
   });
 });
 
-describe("GET /preview.js", () => {
-  it("serves a self-contained script gated on the preview param", async () => {
+describe("GET /ogshot.js", () => {
+  it("serves a self-contained script that previews and warms", async () => {
     const { call } = handler();
-    const response = await call("/preview.js");
+    const response = await call("/ogshot.js");
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("javascript");
     const body = await response.text();
     expect(body).toContain('"ogshot-preview"');
     expect(body).toContain("template[data-ogshot]");
+    expect(body).toContain('method: "HEAD"');
+    expect(body).toContain("requestIdleCallback");
     expect(body).not.toContain("__name(");
+  });
+
+  it("keeps /preview.js as an alias", async () => {
+    const { call } = handler();
+    expect((await call("/preview.js")).status).toBe(200);
+  });
+});
+
+describe("/render.png", () => {
+  it("is the same as /render", async () => {
+    const { call, render } = handler({ "https://example.com/posts/3": ok(html("<b>C</b>")) });
+    const response = await call("/render.png?url=https://example.com/posts/3&v=1");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/png");
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders and caches on HEAD without a body", async () => {
+    const { call, render } = handler({ "https://example.com/posts/4": ok(html("<b>D</b>")) });
+    const head = await call("/render.png?url=https://example.com/posts/4&v=1", "HEAD");
+    expect(head.status).toBe(200);
+    expect(head.headers.get("x-ogshot-cache")).toBe("MISS");
+    expect(head.headers.get("content-type")).toBe("image/png");
+    expect(head.body).toBeNull();
+    expect(render).toHaveBeenCalledTimes(1);
+
+    const get = await call("/render.png?url=https://example.com/posts/4&v=1");
+    expect(get.headers.get("x-ogshot-cache")).toBe("HIT");
+    expect(render).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -136,7 +167,7 @@ describe("other routes", () => {
     expect(body).toContain("ogshot");
     expect(body).toContain("*.example.org");
     // Examples use the deployment's own origin and first allowed host.
-    expect(body).toContain("https://ogshot.test/render?url=https%3A%2F%2Fexample.com%2Fposts%2F1");
+    expect(body).toContain("https://ogshot.test/render.png?url=https%3A%2F%2Fexample.com%2Fposts%2F1");
     expect((await call("/nope")).status).toBe(404);
   });
 });

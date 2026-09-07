@@ -1,4 +1,4 @@
-import { devScript } from "./devScript.js";
+import { clientScript } from "./clientScript.js";
 import { homePage } from "./home.js";
 import { contentKey } from "./extract.js";
 import { isAllowedHost } from "./hosts.js";
@@ -41,15 +41,21 @@ export function createHandler({ renderer, fetch: fetchImpl = (...args) => global
               headers: { "content-type": "text/html; charset=utf-8" },
             },
           );
+        case "/ogshot.js":
         case "/preview.js":
-          return new Response(devScript(), {
+          return new Response(clientScript(), {
             headers: {
               "content-type": "text/javascript; charset=utf-8",
-              "cache-control": "public, max-age=3600",
+              "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+              "access-control-allow-origin": "*",
             },
           });
-        case "/render":
-          return render(url, env, ctx, renderer(env), fetchImpl);
+        case "/render.png":
+        case "/render": {
+          const response = await render(url, env, ctx, renderer(env), fetchImpl);
+          // HEAD warms the cache without sending the body.
+          return request.method === "HEAD" ? new Response(null, response) : response;
+        }
         default:
           return text("Not found", 404);
       }
