@@ -3,6 +3,7 @@ import { homePage } from "./home.js";
 import { contentKey } from "./extract.js";
 import { isAllowedHost } from "./hosts.js";
 import { createPuppeteerRenderer } from "./render.js";
+import { createTiming } from "./timing.js";
 
 /**
  * @typedef {object} Env
@@ -68,15 +69,17 @@ async function render(url, env, ctx, renderer, fetchImpl) {
   if (!target) return text("Missing or invalid url parameter", 400);
   if (!isAllowedHost(target.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
-  const page = await fetchPage(target, fetchImpl);
+  const timing = createTiming();
+  const page = await timing.time("fetch", () => fetchPage(target, fetchImpl));
   if (!page.ok) return text(`Upstream returned ${page.status}`, 502);
 
   // Redirects are followed; make sure we didn't land somewhere off the allowlist.
   const finalUrl = new URL(page.url || target.toString());
   if (!isAllowedHost(finalUrl.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
+  const html = await page.text();
   const version = url.searchParams.get("v");
-  const key = await contentKey(finalUrl, await page.text(), version);
+  const key = await contentKey(finalUrl, html, version);
   const cacheKey = new Request(`${CACHE_ORIGIN}/${key}.png`);
   const cache = caches.default;
 
@@ -86,7 +89,7 @@ async function render(url, env, ctx, renderer, fetchImpl) {
   const hit = await cache.match(cacheKey);
   if (hit) return withHeaders(hit, { "cache-control": browserCache, "x-ogshot-cache": "HIT" });
 
-  const png = await renderer(finalUrl);
+  const png = await renderer(finalUrl, html, timing);
   const stored = new Response(png, {
     headers: {
       "content-type": "image/png",
@@ -98,7 +101,11 @@ async function render(url, env, ctx, renderer, fetchImpl) {
   });
   ctx.waitUntil(cache.put(cacheKey, stored.clone()));
 
-  return withHeaders(stored, { "cache-control": browserCache, "x-ogshot-cache": "MISS" });
+  return withHeaders(stored, {
+    "cache-control": browserCache,
+    "x-ogshot-cache": "MISS",
+    "server-timing": timing.header(),
+  });
 }
 
 /**

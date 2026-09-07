@@ -87,7 +87,9 @@ To see a real PNG of a local page, expose it with `cloudflared tunnel --url loca
 
 ## Fonts and images
 
-Before the screenshot, the renderer waits for every `<img>` in the template to finish loading, for `document.fonts.ready`, and then for the network to go quiet. `document.fonts.ready` resolves when every font the layout requested has loaded, so web fonts normally make it into the image. The only time they don't is when a font request takes longer than five seconds.
+Before the screenshot, the renderer waits for the page's stylesheets, for every `<img>` and CSS background image inside the template, and for `document.fonts.ready`, which resolves when every font the layout requested has loaded. Web fonts normally make it into the image. The only time they don't is when a font request takes longer than five seconds.
+
+To keep renders fast, the browser is handed the HTML the Worker already fetched instead of downloading the page again, and requests that can't affect the image are blocked: third-party scripts, iframes, media, and websockets. First-party scripts still run. If your template depends on a script from another domain, inline it or serve it from your own.
 
 If you want to remove even that possibility, preload the fonts the template uses:
 
@@ -118,9 +120,10 @@ npm test
 | `GET /preview.js` | The dev preview script. |
 | `GET /` | A short description. |
 
-Responses include `x-ogshot-cache: HIT` or `MISS`.
+Responses include `x-ogshot-cache: HIT` or `MISS`. Misses also carry a `Server-Timing` header with the time spent fetching the page, getting a browser, loading, swapping in the template, and screenshotting.
 
 ## Notes
 
 - The Cache API is per data center, so the first crawler to hit a given region triggers one render there. Expect a few misses per image, not one.
-- Templates should be static HTML and CSS. The renderer waits for images and fonts, not for your JavaScript.
+- Templates should be static HTML and CSS. The renderer waits for stylesheets, images, and fonts, not for your JavaScript.
+- Crawlers give up after several seconds, and a first render can take that long. Warm the cache by requesting the image when you publish, before anyone shares the link.

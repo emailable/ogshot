@@ -134,7 +134,8 @@ function tryIt(hosts, examplePage) {
       }
 
       preview.src = URL.createObjectURL(await response.blob());
-      status.textContent = response.headers.get("x-ogshot-cache") + " in " + ms + "ms. " + url;
+      const timing = response.headers.get("server-timing");
+      status.textContent = response.headers.get("x-ogshot-cache") + " in " + ms + "ms" + (timing ? " (" + timing + ")" : "") + ". " + url;
     });
     </script>`;
 }

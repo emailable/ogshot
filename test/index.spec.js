@@ -60,6 +60,8 @@ describe("GET /render", () => {
     expect(new Uint8Array(await miss.arrayBuffer())).toEqual(PNG);
     expect(render).toHaveBeenCalledTimes(1);
     expect(render.mock.calls[0][0].toString()).toBe("https://example.com/posts/1");
+    expect(render.mock.calls[0][1]).toContain("<b>A</b>"); // the HTML is handed to the renderer
+    expect(miss.headers.get("server-timing")).toMatch(/fetch;dur=\d+/);
 
     const hit = await call("/render?url=https://example.com/posts/1&v=1");
     expect(hit.status).toBe(200);

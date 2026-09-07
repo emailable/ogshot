@@ -59,26 +59,45 @@ export async function swapToTemplate() {
   );
   doc.documentElement.style.cssText += ";margin:0;padding:0;width:1200px;height:630px;overflow:hidden;";
 
-  await new Promise((resolve) => requestAnimationFrame(resolve));
+  // Everything below resolves as soon as the resource is ready; the timeouts only matter when
+  // a request hangs.
+  const settle = (promise, ms) =>
+    Promise.race([promise, new Promise((resolve) => setTimeout(resolve, ms))]);
+  const onceLoaded = (el) =>
+    new Promise((resolve) => {
+      el.addEventListener("load", () => resolve(), { once: true });
+      el.addEventListener("error", () => resolve(), { once: true });
+    });
 
-  const images = Array.from(doc.querySelectorAll("img"));
-  await Promise.all(
-    images.map((img) =>
-      img.complete
-        ? Promise.resolve()
-        : new Promise((resolve) => {
-            img.addEventListener("load", () => resolve(), { once: true });
-            img.addEventListener("error", () => resolve(), { once: true });
-          }),
-    ),
+  // Stylesheets. The page was navigated with domcontentloaded, so some may still be in flight.
+  const sheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+  await settle(Promise.all(sheets.map((link) => (link.sheet ? Promise.resolve() : onceLoaded(link)))), 5000);
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const root = doc.getElementById("ogshot");
+
+  // <img> elements and CSS background images inside the template.
+  const images = Array.from(root.querySelectorAll("img"));
+  const backgroundUrls = new Set();
+  for (const el of root.querySelectorAll("*")) {
+    const bg = getComputedStyle(el).backgroundImage;
+    for (const match of bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)) backgroundUrls.add(match[1]);
+  }
+  await settle(
+    Promise.all([
+      ...images.map((img) => (img.complete ? Promise.resolve() : onceLoaded(img))),
+      ...Array.from(backgroundUrls, (src) => {
+        const img = new Image();
+        const loaded = onceLoaded(img);
+        img.src = src;
+        return loaded;
+      }),
+    ]),
+    5000,
   );
 
-  // fonts.ready resolves as soon as every font the layout asked for has loaded. The timer only
-  // matters when a font request hangs, so it can be generous.
-  await Promise.race([
-    doc.fonts ? doc.fonts.ready : Promise.resolve(),
-    new Promise((resolve) => setTimeout(resolve, 5000)),
-  ]);
+  // Fonts the new layout asked for.
+  await settle(doc.fonts ? doc.fonts.ready : Promise.resolve(), 5000);
 
   window.__ogshotReady = true;
 }
