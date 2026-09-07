@@ -87,7 +87,7 @@ export function homePage({ mode, origin = "https://ogshot.example.com", allowedH
           <a href="${REPO}" class="text-neutral-400 hover:text-white [&>svg]:size-8" aria-label="ogshot on GitHub">${GITHUB_ICON}</a>
           <div>
             <p class="font-semibold text-neutral-200">ogshot</p>
-            <p class="mt-0.5 text-sm text-neutral-500">Open source, by <a href="https://github.com/jclusso" class="text-neutral-400 hover:text-white">Jarrett Lusso</a>.</p>
+            <p class="mt-0.5 text-sm text-neutral-500">Open source, by <a href="https://jarrettlusso.com" class="text-neutral-400 hover:text-white">Jarrett Lusso</a>.</p>
           </div>
         </div>
         <nav class="flex gap-6 text-sm">
