@@ -1,0 +1,3 @@
+# Local development only. Copy to .dev.vars and list the hosts you want to render.
+# In production, set ALLOWED_HOSTS as a variable in the Worker's dashboard settings.
+ALLOWED_HOSTS=example.com,*.example.com

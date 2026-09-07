@@ -24,17 +24,14 @@ npm install
 npx wrangler deploy
 ```
 
-Then set `ALLOWED_HOSTS` in `wrangler.jsonc` (or in the dashboard under Settings, Variables) to the hosts you want to render:
+Then set `ALLOWED_HOSTS` to the hosts you want to render. It's a secret, not a variable, so a deploy can never overwrite it. The Deploy button asks for it. Otherwise, in the dashboard under Settings, Variables and Secrets, add a secret named `ALLOWED_HOSTS`, or from the CLI:
 
-```jsonc
-"vars": {
-  "ALLOWED_HOSTS": "example.com,*.example.com"
-}
+```sh
+npx wrangler secret put ALLOWED_HOSTS
+# example.com,*.example.com
 ```
 
 Exact hosts match exactly. `*.example.com` matches any subdomain but not the apex. Anything else gets a 403, so nobody can spend your browser quota screenshotting other sites.
-
-Values set in the dashboard survive later deploys. The `vars` block in the config only seeds the first deploy, so you can keep the file generic and configure each deployment in the UI.
 
 Browser Rendering is included on the Workers Free plan with a daily time limit, and billed by browser time on the Paid plan. A cached OG image costs nothing to serve, so most sites stay well inside the free allotment.
 
@@ -111,10 +108,11 @@ Preloaded fonts are already in memory when the swap happens, so there's nothing 
 
 ```sh
 npm install
+cp .dev.vars.example .dev.vars
 npm run dev
 ```
 
-Browser Rendering has no local emulation. The binding is configured with `remote: true`, so `wrangler dev` runs the Worker locally but sends screenshots through your Cloudflare account. You need to be logged in with `wrangler login`.
+Edit `.dev.vars` to list the hosts you want to render locally. Browser Rendering has no local emulation. The binding is configured with `remote: true`, so `wrangler dev` runs the Worker locally but sends screenshots through your Cloudflare account. You need to be logged in with `wrangler login`.
 
 ```sh
 npm test

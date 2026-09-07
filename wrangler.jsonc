@@ -7,11 +7,8 @@
   // Serialized page functions break when esbuild injects __name helpers.
   "keep_names": false,
   "observability": { "enabled": true },
-  // Variables set in the dashboard survive deploys. The `vars` below only seed the first one.
-  "keep_vars": true,
   "browser": { "binding": "BROWSER", "remote": true },
-  "vars": {
-    // Comma-separated. Exact hosts, or "*.example.com" for any subdomain. Replace with yours.
-    "ALLOWED_HOSTS": "example.com,*.example.com"
-  }
+  // ALLOWED_HOSTS is set in the dashboard, not here. keep_vars makes deploys leave it alone,
+  // which only works for variables this file doesn't define.
+  "keep_vars": true
 }
