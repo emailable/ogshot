@@ -107,7 +107,17 @@ function tryIt(hosts, examplePage) {
       </form>
       <p class="mt-2 text-sm text-neutral-400">Allowed hosts: ${hostList}. Leave <code>v</code> empty to see cache hits; change it to force a render.</p>
       <div id="result" class="mt-4 hidden">
-        <img id="preview" alt="Rendered Open Graph image" class="w-full rounded-md border border-neutral-800 bg-neutral-900">
+        <div id="frame" class="relative aspect-[1200/630] w-full overflow-hidden rounded-md border border-neutral-800 bg-neutral-900">
+          <div id="loading" class="absolute inset-0 flex items-center justify-center gap-3 text-sm text-neutral-400">
+            <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4z"/></svg>
+            Rendering, the first one takes a few seconds
+          </div>
+          <div id="error" class="absolute inset-0 hidden flex-col items-center justify-center gap-1 px-6 text-center">
+            <p class="text-sm font-medium text-red-400">Render failed</p>
+            <p id="error-message" class="break-all font-mono text-xs text-neutral-400"></p>
+          </div>
+          <img id="preview" alt="Rendered Open Graph image" class="hidden h-full w-full">
+        </div>
         <p id="status" class="mt-2 break-all font-mono text-xs text-neutral-500"></p>
       </div>
     </section>
@@ -115,8 +125,18 @@ function tryIt(hosts, examplePage) {
     <script>
     const form = document.getElementById("try");
     const result = document.getElementById("result");
+    const loading = document.getElementById("loading");
+    const error = document.getElementById("error");
+    const errorMessage = document.getElementById("error-message");
     const preview = document.getElementById("preview");
     const status = document.getElementById("status");
+
+    const show = (state) => {
+      loading.classList.toggle("hidden", state !== "loading");
+      error.classList.toggle("hidden", state !== "error");
+      error.classList.toggle("flex", state === "error");
+      preview.classList.toggle("hidden", state !== "image");
+    };
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -125,19 +145,32 @@ function tryIt(hosts, examplePage) {
       if (form.elements.v.value) url.searchParams.set("v", form.elements.v.value);
 
       result.classList.remove("hidden");
-      preview.removeAttribute("src");
-      status.textContent = "Rendering, the first one takes a few seconds...";
+      show("loading");
+      status.textContent = url;
 
       const started = performance.now();
-      const response = await fetch(url);
+      let response;
+      try {
+        response = await fetch(url);
+      } catch (e) {
+        errorMessage.textContent = "Network error: " + e.message;
+        show("error");
+        return;
+      }
       const ms = Math.round(performance.now() - started);
 
       if (!response.ok) {
-        status.textContent = response.status + " " + (await response.text());
+        errorMessage.textContent = response.status + " " + (await response.text());
+        show("error");
         return;
       }
 
-      preview.src = URL.createObjectURL(await response.blob());
+      const blob = await response.blob();
+      await new Promise((resolve) => {
+        preview.onload = preview.onerror = resolve;
+        preview.src = URL.createObjectURL(blob);
+      });
+      show("image");
       const timing = response.headers.get("server-timing");
       status.textContent = response.headers.get("x-ogshot-cache") + " in " + ms + "ms" + (timing ? " (" + timing + ")" : "") + ". " + url;
     });
