@@ -1,6 +1,6 @@
 import { clientScript } from "../dist/client/worker.js";
 import { homePage } from "./home.js";
-import { cacheKey, extractTemplate } from "./extract.js";
+import { extractTemplate } from "./extract.js";
 import { isAllowedHost } from "./hosts.js";
 import { createPuppeteerRenderer } from "./render.js";
 import { createTiming } from "./timing.js";
@@ -72,6 +72,16 @@ async function render(url, env, ctx, renderer) {
   if (!target) return text("Missing or invalid url parameter", 400);
   if (!isAllowedHost(target.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
+  // The key is the page URL and `v`, nothing else, so a hit costs one cache lookup and never
+  // touches the origin. `v` is what changes when the image should; without it the entry expires
+  // with its own Cache-Control after a day.
+  const version = url.searchParams.get("v");
+  const key = cacheKey(target, version);
+  const cache = caches.default;
+
+  const hit = await cache.match(key);
+  if (hit) return withHeaders(hit, { "x-ogshot-cache": "HIT" });
+
   const timing = createTiming();
   const page = await timing.time("fetch", () => fetchPage(target));
   if (!page.ok) return text(`Upstream returned ${page.status}`, 502);
@@ -81,17 +91,7 @@ async function render(url, env, ctx, renderer) {
   if (!isAllowedHost(finalUrl.hostname, env.ALLOWED_HOSTS)) return text("Host not allowed", 403);
 
   const html = await page.text();
-  const template = extractTemplate(html);
-  if (template === null) return text("Page has no <template data-ogshot>", 422);
-
-  // `v` is part of the key, so a cached entry is only ever served to requests with the same
-  // `v`-ness and its Cache-Control can be stored as is.
-  const version = url.searchParams.get("v");
-  const key = new Request(`${CACHE_ORIGIN}/${await cacheKey(finalUrl, template, version)}.png`);
-  const cache = caches.default;
-
-  const hit = await cache.match(key);
-  if (hit) return withHeaders(hit, { "x-ogshot-cache": "HIT" });
+  if (extractTemplate(html) === null) return text("Page has no <template data-ogshot>", 422);
 
   const png = await renderer(finalUrl, html, timing);
   const response = new Response(png, {
@@ -104,6 +104,18 @@ async function render(url, env, ctx, renderer) {
   ctx.waitUntil(cache.put(key, response.clone()));
 
   return withHeaders(response, { "x-ogshot-cache": "MISS", "server-timing": timing.header() });
+}
+
+/**
+ * @param {URL} target
+ * @param {string | null} version The `v` query parameter, if any.
+ * @returns {Request}
+ */
+function cacheKey(target, version) {
+  const key = new URL(`${CACHE_ORIGIN}/render.png`);
+  key.searchParams.set("url", target.toString());
+  if (version !== null) key.searchParams.set("v", version);
+  return new Request(key.toString());
 }
 
 /**

@@ -95,15 +95,17 @@ describe("GET /render.png", () => {
     expect(render).toHaveBeenCalledTimes(3);
   });
 
-  it("re-renders when the template changes", async () => {
+  it("serves a hit without fetching the page, even if the template changed", async () => {
     let version = 1;
-    const { call, render } = handler({
+    const { call, render, fetch } = handler({
       "https://a.example.org/p": () => ok(html(`<b>v${version++}</b>`))(),
     });
 
-    await call("/render.png?url=https://a.example.org/p");
-    await call("/render.png?url=https://a.example.org/p");
-    expect(render).toHaveBeenCalledTimes(2);
+    await call("/render.png?url=https://a.example.org/p&v=1");
+    const hit = await call("/render.png?url=https://a.example.org/p&v=1");
+    expect(hit.headers.get("x-ogshot-cache")).toBe("HIT");
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("allows wildcard subdomains", async () => {

@@ -9,8 +9,8 @@ Put a `<template data-ogshot>` on any page. ogshot loads the page in headless Ch
 ## How it works
 
 1. A crawler requests `https://ogshot.example.com/render.png?url=https://example.com/posts/1&v=1725000000`.
-2. The Worker fetches the page HTML, pulls out the template, and hashes it. That hash is the cache key.
-3. On a miss, it opens the page in [Browser Rendering](https://developers.cloudflare.com/browser-rendering/), replaces the body with the template, waits for images and fonts, and screenshots.
+2. The Worker looks up the page URL and `v` in its cache.
+3. On a miss, it fetches the page HTML and opens it in [Browser Rendering](https://developers.cloudflare.com/browser-rendering/), replaces the body with the template, waits for images and fonts, and screenshots.
 4. The PNG is stored in the Workers Cache API and served with long cache headers.
 
 ## Deploy
@@ -65,7 +65,7 @@ Generate the contents with whatever renders the rest of your page. The template 
 
 Facebook, X, Slack, and iMessage cache `og:image` by URL, some effectively forever. The Worker can't do anything about that, so the URL has to change when the image should. Pass something that changes when the card content changes: the record's last-modified timestamp, a content hash, a cache key.
 
-The Worker keys its cache on `v` together with the template's content. A new `v` always renders fresh, which also covers changes the template hash can't see, like an edited stylesheet or a replaced image at the same URL. If you forget to bump `v`, a template edit still triggers a render, but crawlers that already cached the old URL won't see it until `v` changes. With `v` present the response is `immutable` with a one-year max-age; without it, one day.
+The Worker keys its cache on the page URL and `v`, so a new `v` always renders fresh and the same `v` is served from cache without touching your site. If you change the card and don't bump `v`, nothing updates, at the Worker or anywhere else. With `v` present the response is `immutable` with a one-year max-age; without it, one day, after which the Worker renders again.
 
 ### 3. Add the client to every page
 
@@ -151,7 +151,6 @@ The PNG is re-encoded losslessly after the screenshot. Chromium's encoder favors
 
 - The Cache API is per data center, so the first crawler to hit a given region triggers one render there. Expect a few misses per image, not one.
 - Templates should be static HTML and CSS. The renderer waits for stylesheets, images, and fonts, not for your JavaScript.
-- Each cache-warming HEAD costs the Worker one fetch of your page HTML to compute the key. Negligible for most sites; if yours is very high traffic, skip the client and warm on publish instead.
 
 ## Credits
 
